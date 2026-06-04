@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management System</title>
+    <title>Smart Inventory Management System</title>
     <style>
         * {
             margin: 0;
@@ -57,6 +57,7 @@
             color: #666;
             transition: all 0.3s ease;
             border-bottom: 3px solid transparent;
+            white-space: nowrap;
         }
 
         .nav-tabs button.active {
@@ -183,6 +184,15 @@
             background: #2980b9;
         }
 
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
@@ -232,6 +242,11 @@
         .badge-warning {
             background: #fff3cd;
             color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
         }
 
         .empty-message {
@@ -310,6 +325,14 @@
             border-radius: 10px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card.purchases {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card.sales {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
 
         .stat-number {
@@ -434,6 +457,12 @@
             flex-wrap: wrap;
         }
 
+        .quick-action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
         @media print {
             body {
                 background: white;
@@ -476,8 +505,12 @@
             }
 
             .nav-tabs button {
-                font-size: 14px;
-                padding: 12px 10px;
+                font-size: 12px;
+                padding: 12px 8px;
+            }
+
+            .quick-action-buttons {
+                flex-direction: column;
             }
         }
     </style>
@@ -486,12 +519,14 @@
     <div class="container">
         <div class="header">
             <h1>📦 Smart Inventory Management System</h1>
-            <p>Manage Products, Customers, and Invoices with GST</p>
+            <p>Manage Products, Customers, Invoices, Purchase & Sales with GST</p>
         </div>
 
         <div class="nav-tabs">
             <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
             <button class="nav-btn" data-tab="products">Products</button>
+            <button class="nav-btn" data-tab="purchase">Purchase</button>
+            <button class="nav-btn" data-tab="sell">Sales</button>
             <button class="nav-btn" data-tab="customers">Customers</button>
             <button class="nav-btn" data-tab="invoices">Invoices</button>
             <button class="nav-btn" data-tab="reports">Reports</button>
@@ -512,6 +547,14 @@
                     <div class="stat-card">
                         <div class="stat-label">Total Customers</div>
                         <div class="stat-number" id="totalCustomers">0</div>
+                    </div>
+                    <div class="stat-card purchases">
+                        <div class="stat-label">Total Purchases</div>
+                        <div class="stat-number" id="totalPurchases">0</div>
+                    </div>
+                    <div class="stat-card sales">
+                        <div class="stat-label">Total Sales</div>
+                        <div class="stat-number" id="totalSales">0</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total Invoices</div>
@@ -573,6 +616,128 @@
 
                 <h3>Product List</h3>
                 <div class="table-container" id="productsTableContainer"></div>
+            </div>
+
+            <!-- Purchase Tab -->
+            <div id="purchase" class="tab-content">
+                <h2>Purchase Management</h2>
+                
+                <div class="invoice-section">
+                    <h3>Record Purchase</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Supplier Name</label>
+                            <input type="text" id="supplierName" placeholder="Supplier name">
+                        </div>
+                        <div class="form-group">
+                            <label>Purchase Date</label>
+                            <input type="date" id="purchaseDate">
+                        </div>
+                    </div>
+
+                    <div id="purchaseItems" class="invoice-section">
+                        <h4>Add Items</h4>
+                        <div class="form-row three">
+                            <div class="form-group">
+                                <label>Select Product</label>
+                                <select id="purchaseProduct">
+                                    <option value="">-- Select Product --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <input type="number" id="purchaseQuantity" placeholder="0" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label>Unit Price (₹)</label>
+                                <input type="number" id="purchasePrice" placeholder="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="addPurchaseItem()">Add Item</button>
+                    </div>
+
+                    <h4>Purchase Items</h4>
+                    <div class="table-container" id="purchaseItemsContainer"></div>
+
+                    <div class="invoice-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>GST Rate (%)</label>
+                                <input type="number" id="purchaseGstRate" placeholder="18" value="18" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="purchaseNotes" placeholder="Additional notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="generatePurchase()">Complete Purchase</button>
+                </div>
+
+                <h3>Purchase List</h3>
+                <div class="table-container" id="purchasesTableContainer"></div>
+            </div>
+
+            <!-- Sales Tab -->
+            <div id="sell" class="tab-content">
+                <h2>Sales Management</h2>
+                
+                <div class="invoice-section">
+                    <h3>Record Sale</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Sale Date</label>
+                            <input type="date" id="saleDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Customer Name</label>
+                            <input type="text" id="saleCustomerName" placeholder="Customer name">
+                        </div>
+                    </div>
+
+                    <div id="saleItems" class="invoice-section">
+                        <h4>Add Items</h4>
+                        <div class="form-row three">
+                            <div class="form-group">
+                                <label>Select Product</label>
+                                <select id="saleProduct" onchange="updateSaleProductPrice()">
+                                    <option value="">-- Select Product --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <input type="number" id="saleQuantity" placeholder="0" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label>Unit Price (₹)</label>
+                                <input type="number" id="salePrice" placeholder="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="addSaleItem()">Add Item</button>
+                    </div>
+
+                    <h4>Sale Items</h4>
+                    <div class="table-container" id="saleItemsContainer"></div>
+
+                    <div class="invoice-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>GST Rate (%)</label>
+                                <input type="number" id="saleGstRate" placeholder="18" value="18" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label>Discount (%)</label>
+                                <input type="number" id="saleDiscount" placeholder="0" value="0" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="completeSale()">Complete Sale</button>
+                </div>
+
+                <h3>Sales List</h3>
+                <div class="table-container" id="salesTableContainer"></div>
             </div>
 
             <!-- Customers Tab -->
@@ -689,6 +854,9 @@
                 <h3>Inventory Summary</h3>
                 <div class="table-container" id="inventorySummaryContainer"></div>
 
+                <h3>Purchase Report</h3>
+                <div class="table-container" id="purchaseReportContainer"></div>
+
                 <h3>Sales Report</h3>
                 <div class="table-container" id="salesReportContainer"></div>
 
@@ -710,6 +878,36 @@
                 <button class="btn btn-success" onclick="printInvoice()">Print Invoice</button>
                 <button class="btn btn-info" onclick="downloadInvoicePDF()">Download PDF</button>
                 <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Preview Modal -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                Purchase Receipt Preview
+                <button class="close-modal" onclick="closePurchaseModal()">×</button>
+            </div>
+            <div id="purchasePreview"></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn btn-success" onclick="printPurchase()">Print Receipt</button>
+                <button class="btn btn-primary" onclick="savePurchase()">Save Purchase</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale Preview Modal -->
+    <div id="saleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                Sales Receipt Preview
+                <button class="close-modal" onclick="closeSaleModal()">×</button>
+            </div>
+            <div id="salePreview"></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn btn-success" onclick="printSale()">Print Receipt</button>
+                <button class="btn btn-primary" onclick="saveSale()">Save Sale</button>
             </div>
         </div>
     </div>
@@ -767,11 +965,17 @@
             products: [],
             customers: [],
             invoices: [],
-            invoiceItems: []
+            purchases: [],
+            sales: [],
+            invoiceItems: [],
+            purchaseItems: [],
+            saleItems: []
         };
 
         let currentEditingProduct = null;
         let currentInvoice = null;
+        let currentPurchase = null;
+        let currentSale = null;
 
         // Load data from localStorage
         function loadData() {
@@ -806,10 +1010,12 @@
             });
         });
 
-        // Set today's date for invoice
+        // Set today's date for forms
         window.addEventListener('load', () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('invoiceDate').value = today;
+            document.getElementById('purchaseDate').value = today;
+            document.getElementById('saleDate').value = today;
         });
 
         // ==================== PRODUCTS ====================
@@ -851,7 +1057,7 @@
             saveData();
             clearProductForm();
             updateProductsView();
-            updateInvoiceProductSelect();
+            updateProductSelects();
             showAlert('Product added successfully!');
         }
 
@@ -871,7 +1077,7 @@
                 data.products = data.products.filter(p => p.id !== id);
                 saveData();
                 updateProductsView();
-                updateInvoiceProductSelect();
+                updateProductSelects();
                 showAlert('Product deleted successfully!');
             }
         }
@@ -909,7 +1115,7 @@
             saveData();
             closeEditProductModal();
             updateProductsView();
-            updateInvoiceProductSelect();
+            updateProductSelects();
             showAlert('Product updated successfully!');
         }
 
@@ -949,6 +1155,595 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+        }
+
+        function updateProductSelects() {
+            updateInvoiceProductSelect();
+            updatePurchaseProductSelect();
+            updateSaleProductSelect();
+        }
+
+        // ==================== PURCHASE ====================
+
+        function updatePurchaseProductSelect() {
+            const select = document.getElementById('purchaseProduct');
+            select.innerHTML = '<option value="">-- Select Product --</option>';
+            data.products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                select.appendChild(option);
+            });
+        }
+
+        function addPurchaseItem() {
+            const productId = document.getElementById('purchaseProduct').value;
+            const quantity = parseInt(document.getElementById('purchaseQuantity').value);
+            const price = parseFloat(document.getElementById('purchasePrice').value);
+
+            if (!productId || !quantity || !price) {
+                showAlert('Please fill all purchase item fields', 'error');
+                return;
+            }
+
+            const product = data.products.find(p => p.id == productId);
+            if (!product) {
+                showAlert('Product not found', 'error');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                productId,
+                productName: product.name,
+                quantity,
+                price,
+                total: quantity * price
+            };
+
+            if (!currentPurchase) {
+                currentPurchase = [];
+            }
+
+            currentPurchase.push(item);
+            updatePurchaseItemsView();
+
+            document.getElementById('purchaseProduct').value = '';
+            document.getElementById('purchaseQuantity').value = '1';
+            document.getElementById('purchasePrice').value = '';
+        }
+
+        function removePurchaseItem(id) {
+            currentPurchase = currentPurchase.filter(item => item.id !== id);
+            updatePurchaseItemsView();
+        }
+
+        function updatePurchaseItemsView() {
+            const container = document.getElementById('purchaseItemsContainer');
+            
+            if (!currentPurchase || currentPurchase.length === 0) {
+                container.innerHTML = '<div class="empty-message">No items added yet.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th><th>Actions</th></tr></thead><tbody>';
+
+            currentPurchase.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                    <td><button class="btn btn-danger" onclick="removePurchaseItem(${item.id})">Remove</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function generatePurchase() {
+            const supplier = document.getElementById('supplierName').value.trim();
+            const purchaseDate = document.getElementById('purchaseDate').value;
+            const gstRate = parseFloat(document.getElementById('purchaseGstRate').value);
+            const notes = document.getElementById('purchaseNotes').value.trim();
+
+            if (!supplier) {
+                showAlert('Please enter supplier name', 'error');
+                return;
+            }
+
+            if (!currentPurchase || currentPurchase.length === 0) {
+                showAlert('Please add at least one item', 'error');
+                return;
+            }
+
+            const subtotal = currentPurchase.reduce((sum, item) => sum + item.total, 0);
+            const gstAmount = (subtotal * gstRate) / 100;
+            const totalAmount = subtotal + gstAmount;
+
+            const purchase = {
+                id: Date.now(),
+                purchaseNumber: 'PUR-' + Date.now(),
+                supplier,
+                purchaseDate,
+                items: [...currentPurchase],
+                subtotal,
+                gstRate,
+                gstAmount,
+                totalAmount,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            showPurchasePreview(purchase);
+        }
+
+        function showPurchasePreview(purchase) {
+            currentPurchase = null;
+            
+            let itemsHtml = '<table><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>';
+            purchase.items.forEach(item => {
+                itemsHtml += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                </tr>`;
+            });
+            itemsHtml += '</tbody></table>';
+
+            const preview = `
+                <div class="invoice-preview">
+                    <div class="invoice-header">
+                        <div class="invoice-title">PURCHASE RECEIPT</div>
+                        <div>${purchase.purchaseNumber}</div>
+                        <div>Date: ${new Date(purchase.purchaseDate).toLocaleDateString()}</div>
+                    </div>
+
+                    <div class="invoice-details">
+                        <div>
+                            <strong>Supplier:</strong><br>
+                            ${purchase.supplier}
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>Company Details:</strong><br>
+                            Your Company Name<br>
+                            Company Address
+                        </div>
+                    </div>
+
+                    <div class="invoice-table">
+                        <strong>Items Purchased:</strong>
+                        ${itemsHtml}
+                    </div>
+
+                    <div class="invoice-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal:</span>
+                            <span class="summary-value">₹${purchase.subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label gst-amount">GST (${purchase.gstRate}%):</span>
+                            <span class="summary-value gst-amount">₹${purchase.gstAmount.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+                            <span class="summary-label total-amount">TOTAL AMOUNT:</span>
+                            <span class="summary-value total-amount">₹${purchase.totalAmount.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; color: #999; font-size: 12px;">
+                        ${purchase.notes ? `Notes: ${purchase.notes}` : ''}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('purchasePreview').innerHTML = preview;
+            currentPurchase = purchase;
+            document.getElementById('purchaseModal').classList.add('show');
+        }
+
+        function savePurchase() {
+            if (!currentPurchase) return;
+
+            // Update product stock
+            currentPurchase.items.forEach(item => {
+                const product = data.products.find(p => p.id == item.productId);
+                if (product) {
+                    product.stock += item.quantity;
+                }
+            });
+
+            data.purchases.push(currentPurchase);
+            saveData();
+            
+            closePurchaseModal();
+            clearPurchaseForm();
+            updatePurchasesView();
+            updateProductsView();
+            updateDashboard();
+            showAlert('Purchase recorded successfully!');
+        }
+
+        function printPurchase() {
+            window.print();
+        }
+
+        function closePurchaseModal() {
+            document.getElementById('purchaseModal').classList.remove('show');
+            currentPurchase = null;
+        }
+
+        function clearPurchaseForm() {
+            document.getElementById('supplierName').value = '';
+            document.getElementById('purchaseProduct').value = '';
+            document.getElementById('purchaseQuantity').value = '1';
+            document.getElementById('purchasePrice').value = '';
+            document.getElementById('purchaseGstRate').value = '18';
+            document.getElementById('purchaseNotes').value = '';
+            document.getElementById('purchaseItemsContainer').innerHTML = '<div class="empty-message">No items added yet.</div>';
+        }
+
+        function updatePurchasesView() {
+            const container = document.getElementById('purchasesTableContainer');
+            
+            if (data.purchases.length === 0) {
+                container.innerHTML = '<div class="empty-message">No purchases recorded yet.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Purchase #</th><th>Supplier</th><th>Date</th><th>Items</th><th>Total Amount</th><th>Actions</th></tr></thead><tbody>';
+
+            data.purchases.forEach(purchase => {
+                html += `<tr>
+                    <td>${purchase.purchaseNumber}</td>
+                    <td>${purchase.supplier}</td>
+                    <td>${new Date(purchase.purchaseDate).toLocaleDateString()}</td>
+                    <td>${purchase.items.length}</td>
+                    <td>₹${purchase.totalAmount.toFixed(2)}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-info" onclick="viewPurchase(${purchase.id})">View</button>
+                        <button class="btn btn-danger" onclick="deletePurchase(${purchase.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function viewPurchase(id) {
+            const purchase = data.purchases.find(p => p.id === id);
+            if (purchase) {
+                showPurchasePreview(purchase);
+            }
+        }
+
+        function deletePurchase(id) {
+            if (confirm('Are you sure you want to delete this purchase? This will reduce stock accordingly.')) {
+                const purchase = data.purchases.find(p => p.id === id);
+                if (purchase) {
+                    purchase.items.forEach(item => {
+                        const product = data.products.find(p => p.id == item.productId);
+                        if (product) {
+                            product.stock -= item.quantity;
+                        }
+                    });
+                }
+                data.purchases = data.purchases.filter(p => p.id !== id);
+                saveData();
+                updatePurchasesView();
+                updateProductsView();
+                showAlert('Purchase deleted successfully!');
+            }
+        }
+
+        // ==================== SALES ====================
+
+        function updateSaleProductSelect() {
+            const select = document.getElementById('saleProduct');
+            select.innerHTML = '<option value="">-- Select Product --</option>';
+            data.products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.name} (Stock: ${product.stock})`;
+                select.appendChild(option);
+            });
+        }
+
+        function updateSaleProductPrice() {
+            const productId = document.getElementById('saleProduct').value;
+            if (!productId) {
+                document.getElementById('salePrice').value = '';
+                return;
+            }
+            const product = data.products.find(p => p.id == productId);
+            if (product) {
+                document.getElementById('salePrice').value = product.sellingPrice.toFixed(2);
+            }
+        }
+
+        function addSaleItem() {
+            const productId = document.getElementById('saleProduct').value;
+            const quantity = parseInt(document.getElementById('saleQuantity').value);
+            const price = parseFloat(document.getElementById('salePrice').value);
+
+            if (!productId || !quantity || !price) {
+                showAlert('Please select product and enter valid quantity', 'error');
+                return;
+            }
+
+            const product = data.products.find(p => p.id == productId);
+            if (!product) {
+                showAlert('Product not found', 'error');
+                return;
+            }
+
+            if (quantity > product.stock) {
+                showAlert(`Only ${product.stock} units available in stock`, 'error');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                productId,
+                productName: product.name,
+                quantity,
+                price,
+                total: quantity * price
+            };
+
+            if (!currentSale) {
+                currentSale = [];
+            }
+
+            currentSale.push(item);
+            updateSaleItemsView();
+
+            document.getElementById('saleProduct').value = '';
+            document.getElementById('saleQuantity').value = '1';
+            document.getElementById('salePrice').value = '';
+        }
+
+        function removeSaleItem(id) {
+            currentSale = currentSale.filter(item => item.id !== id);
+            updateSaleItemsView();
+        }
+
+        function updateSaleItemsView() {
+            const container = document.getElementById('saleItemsContainer');
+            
+            if (!currentSale || currentSale.length === 0) {
+                container.innerHTML = '<div class="empty-message">No items added yet.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th><th>Actions</th></tr></thead><tbody>';
+
+            currentSale.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                    <td><button class="btn btn-danger" onclick="removeSaleItem(${item.id})">Remove</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function completeSale() {
+            const customerName = document.getElementById('saleCustomerName').value.trim();
+            const saleDate = document.getElementById('saleDate').value;
+            const gstRate = parseFloat(document.getElementById('saleGstRate').value);
+            const discount = parseFloat(document.getElementById('saleDiscount').value);
+
+            if (!customerName) {
+                showAlert('Please enter customer name', 'error');
+                return;
+            }
+
+            if (!currentSale || currentSale.length === 0) {
+                showAlert('Please add at least one item', 'error');
+                return;
+            }
+
+            const subtotal = currentSale.reduce((sum, item) => sum + item.total, 0);
+            const discountAmount = (subtotal * discount) / 100;
+            const taxableAmount = subtotal - discountAmount;
+            const gstAmount = (taxableAmount * gstRate) / 100;
+            const totalAmount = taxableAmount + gstAmount;
+
+            const sale = {
+                id: Date.now(),
+                saleNumber: 'SAL-' + Date.now(),
+                customerName,
+                saleDate,
+                items: [...currentSale],
+                subtotal,
+                discount,
+                discountAmount,
+                taxableAmount,
+                gstRate,
+                gstAmount,
+                totalAmount,
+                createdAt: new Date().toISOString()
+            };
+
+            showSalePreview(sale);
+        }
+
+        function showSalePreview(sale) {
+            currentSale = null;
+            
+            let itemsHtml = '<table><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>';
+            sale.items.forEach(item => {
+                itemsHtml += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                </tr>`;
+            });
+            itemsHtml += '</tbody></table>';
+
+            const preview = `
+                <div class="invoice-preview">
+                    <div class="invoice-header">
+                        <div class="invoice-title">SALES RECEIPT</div>
+                        <div>${sale.saleNumber}</div>
+                        <div>Date: ${new Date(sale.saleDate).toLocaleDateString()}</div>
+                    </div>
+
+                    <div class="invoice-details">
+                        <div>
+                            <strong>Customer:</strong><br>
+                            ${sale.customerName}
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>Company Details:</strong><br>
+                            Your Company Name<br>
+                            Company Address
+                        </div>
+                    </div>
+
+                    <div class="invoice-table">
+                        <strong>Items Sold:</strong>
+                        ${itemsHtml}
+                    </div>
+
+                    <div class="invoice-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal:</span>
+                            <span class="summary-value">₹${sale.subtotal.toFixed(2)}</span>
+                        </div>
+                        ${sale.discount > 0 ? `
+                            <div class="summary-row">
+                                <span class="summary-label">Discount (${sale.discount}%):</span>
+                                <span class="summary-value">-₹${sale.discountAmount.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="summary-row">
+                            <span class="summary-label">Taxable Amount:</span>
+                            <span class="summary-value">₹${sale.taxableAmount.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label gst-amount">GST (${sale.gstRate}%):</span>
+                            <span class="summary-value gst-amount">₹${sale.gstAmount.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+                            <span class="summary-label total-amount">TOTAL AMOUNT:</span>
+                            <span class="summary-value total-amount">₹${sale.totalAmount.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; color: #999; font-size: 12px;">
+                        Thank you for your purchase!
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('salePreview').innerHTML = preview;
+            currentSale = sale;
+            document.getElementById('saleModal').classList.add('show');
+        }
+
+        function saveSale() {
+            if (!currentSale) return;
+
+            // Update product stock
+            currentSale.items.forEach(item => {
+                const product = data.products.find(p => p.id == item.productId);
+                if (product) {
+                    product.stock -= item.quantity;
+                }
+            });
+
+            data.sales.push(currentSale);
+            saveData();
+            
+            closeSaleModal();
+            clearSaleForm();
+            updateSalesView();
+            updateProductsView();
+            updateDashboard();
+            showAlert('Sale recorded successfully!');
+        }
+
+        function printSale() {
+            window.print();
+        }
+
+        function closeSaleModal() {
+            document.getElementById('saleModal').classList.remove('show');
+            currentSale = null;
+        }
+
+        function clearSaleForm() {
+            document.getElementById('saleCustomerName').value = '';
+            document.getElementById('saleProduct').value = '';
+            document.getElementById('saleQuantity').value = '1';
+            document.getElementById('salePrice').value = '';
+            document.getElementById('saleGstRate').value = '18';
+            document.getElementById('saleDiscount').value = '0';
+            document.getElementById('saleItemsContainer').innerHTML = '<div class="empty-message">No items added yet.</div>';
+        }
+
+        function updateSalesView() {
+            const container = document.getElementById('salesTableContainer');
+            
+            if (data.sales.length === 0) {
+                container.innerHTML = '<div class="empty-message">No sales recorded yet.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Sale #</th><th>Customer</th><th>Date</th><th>Items</th><th>Total Amount</th><th>Actions</th></tr></thead><tbody>';
+
+            data.sales.forEach(sale => {
+                html += `<tr>
+                    <td>${sale.saleNumber}</td>
+                    <td>${sale.customerName}</td>
+                    <td>${new Date(sale.saleDate).toLocaleDateString()}</td>
+                    <td>${sale.items.length}</td>
+                    <td>₹${sale.totalAmount.toFixed(2)}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-info" onclick="viewSale(${sale.id})">View</button>
+                        <button class="btn btn-danger" onclick="deleteSale(${sale.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function viewSale(id) {
+            const sale = data.sales.find(s => s.id === id);
+            if (sale) {
+                showSalePreview(sale);
+            }
+        }
+
+        function deleteSale(id) {
+            if (confirm('Are you sure you want to delete this sale? This will increase stock accordingly.')) {
+                const sale = data.sales.find(s => s.id === id);
+                if (sale) {
+                    sale.items.forEach(item => {
+                        const product = data.products.find(p => p.id == item.productId);
+                        if (product) {
+                            product.stock += item.quantity;
+                        }
+                    });
+                }
+                data.sales = data.sales.filter(s => s.id !== id);
+                saveData();
+                updateSalesView();
+                updateProductsView();
+                showAlert('Sale deleted successfully!');
+            }
         }
 
         // ==================== CUSTOMERS ====================
@@ -1058,7 +1853,6 @@
         function loadCustomerDetails() {
             const customerId = document.getElementById('invoiceCustomer').value;
             if (!customerId) return;
-            // Customer details are used when generating invoice
         }
 
         function updateProductPrice() {
@@ -1189,7 +1983,6 @@
                 createdAt: new Date().toISOString()
             };
 
-            // Show preview
             showInvoicePreview(invoice);
         }
 
@@ -1370,6 +2163,7 @@
 
         function updateReports() {
             updateInventorySummary();
+            updatePurchaseReport();
             updateSalesReport();
             updateLowStockAlert();
         }
@@ -1407,35 +2201,72 @@
             container.innerHTML = html;
         }
 
-        function updateSalesReport() {
-            const container = document.getElementById('salesReportContainer');
+        function updatePurchaseReport() {
+            const container = document.getElementById('purchaseReportContainer');
             
-            if (data.invoices.length === 0) {
-                container.innerHTML = '<div class="empty-message">No sales recorded yet.</div>';
+            if (data.purchases.length === 0) {
+                container.innerHTML = '<div class="empty-message">No purchases recorded yet.</div>';
                 return;
             }
 
-            let html = '<table><thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Subtotal</th><th>GST</th><th>Total</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Purchase #</th><th>Supplier</th><th>Date</th><th>Subtotal</th><th>GST</th><th>Total</th></tr></thead><tbody>';
 
-            let totalSales = 0;
+            let totalPurchases = 0;
             let totalGst = 0;
 
-            data.invoices.forEach(invoice => {
-                totalSales += invoice.subtotal;
-                totalGst += invoice.gstAmount;
+            data.purchases.forEach(purchase => {
+                totalPurchases += purchase.subtotal;
+                totalGst += purchase.gstAmount;
 
                 html += `<tr>
-                    <td>${invoice.invoiceNumber}</td>
-                    <td>${invoice.customerName}</td>
-                    <td>${new Date(invoice.invoiceDate).toLocaleDateString()}</td>
-                    <td>₹${invoice.subtotal.toFixed(2)}</td>
-                    <td>₹${invoice.gstAmount.toFixed(2)}</td>
-                    <td>₹${invoice.totalAmount.toFixed(2)}</td>
+                    <td>${purchase.purchaseNumber}</td>
+                    <td>${purchase.supplier}</td>
+                    <td>${new Date(purchase.purchaseDate).toLocaleDateString()}</td>
+                    <td>₹${purchase.subtotal.toFixed(2)}</td>
+                    <td>₹${purchase.gstAmount.toFixed(2)}</td>
+                    <td>₹${purchase.totalAmount.toFixed(2)}</td>
                 </tr>`;
             });
 
             html += `<tr style="background: #f0f0f0; font-weight: 700;">
-                <td colspan="3">TOTAL</td>
+                <td colspan="3">TOTAL PURCHASES</td>
+                <td>₹${totalPurchases.toFixed(2)}</td>
+                <td>₹${totalGst.toFixed(2)}</td>
+                <td>₹${(totalPurchases + totalGst).toFixed(2)}</td>
+            </tr></tbody></table>`;
+
+            container.innerHTML = html;
+        }
+
+        function updateSalesReport() {
+            const container = document.getElementById('salesReportContainer');
+            
+            if (data.sales.length === 0) {
+                container.innerHTML = '<div class="empty-message">No sales recorded yet.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Sale #</th><th>Customer</th><th>Date</th><th>Subtotal</th><th>GST</th><th>Total</th></tr></thead><tbody>';
+
+            let totalSales = 0;
+            let totalGst = 0;
+
+            data.sales.forEach(sale => {
+                totalSales += sale.subtotal;
+                totalGst += sale.gstAmount;
+
+                html += `<tr>
+                    <td>${sale.saleNumber}</td>
+                    <td>${sale.customerName}</td>
+                    <td>${new Date(sale.saleDate).toLocaleDateString()}</td>
+                    <td>₹${sale.subtotal.toFixed(2)}</td>
+                    <td>₹${sale.gstAmount.toFixed(2)}</td>
+                    <td>₹${sale.totalAmount.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += `<tr style="background: #f0f0f0; font-weight: 700;">
+                <td colspan="3">TOTAL SALES</td>
                 <td>₹${totalSales.toFixed(2)}</td>
                 <td>₹${totalGst.toFixed(2)}</td>
                 <td>₹${(totalSales + totalGst).toFixed(2)}</td>
@@ -1475,6 +2306,8 @@
             document.getElementById('totalProducts').textContent = data.products.length;
             document.getElementById('totalCustomers').textContent = data.customers.length;
             document.getElementById('totalInvoices').textContent = data.invoices.length;
+            document.getElementById('totalPurchases').textContent = data.purchases.length;
+            document.getElementById('totalSales').textContent = data.sales.length;
             document.getElementById('lowStockItems').textContent = data.products.filter(p => p.stock <= p.reorderLevel).length;
         }
 
@@ -1482,10 +2315,12 @@
             updateProductsView();
             updateCustomersView();
             updateInvoicesView();
+            updatePurchasesView();
+            updateSalesView();
             updateDashboard();
             updateReports();
             updateInvoiceCustomerSelect();
-            updateInvoiceProductSelect();
+            updateProductSelects();
         }
 
         // Initialize on page load
