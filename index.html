@@ -463,6 +463,23 @@
             margin-bottom: 20px;
         }
 
+        .data-backup-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+
+        .data-backup-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
         @media print {
             body {
                 background: white;
@@ -850,6 +867,19 @@
             <!-- Reports Tab -->
             <div id="reports" class="tab-content">
                 <h2>Reports</h2>
+
+                <!-- Data Backup Section -->
+                <div class="data-backup-section">
+                    <h3>📊 Data Backup & Restore</h3>
+                    <div class="quick-action-buttons">
+                        <button class="btn btn-success" onclick="exportData()">📥 Export Data (JSON)</button>
+                        <button class="btn btn-info" onclick="document.getElementById('fileInput').click()">📤 Import Data (JSON)</button>
+                    </div>
+                    <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                        ℹ️ Export your data to JSON format for backup. Import previously exported JSON files to restore your data.
+                    </p>
+                    <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+                </div>
                 
                 <h3>Inventory Summary</h3>
                 <div class="table-container" id="inventorySummaryContainer"></div>
@@ -991,6 +1021,55 @@
             localStorage.setItem('inventoryData', JSON.stringify(data));
         }
 
+        // Export data to JSON file
+        function exportData() {
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `inventory-backup-${timestamp}.json`;
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showAlert(`Data exported successfully as ${filename}`, 'success');
+        }
+
+        // Import data from JSON file
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // Validate imported data structure
+                    if (!importedData.products || !importedData.customers || !importedData.invoices) {
+                        throw new Error('Invalid data format. Missing required fields.');
+                    }
+
+                    // Confirm before overwriting
+                    if (confirm('⚠️ This will replace all existing data. Are you sure you want to continue?')) {
+                        data = importedData;
+                        saveData();
+                        updateAllViews();
+                        showAlert('Data imported successfully!', 'success');
+                    }
+                } catch (error) {
+                    showAlert(`Error importing data: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+
         // Show alert message
         function showAlert(message, type = 'success') {
             const alert = document.getElementById('alert');
@@ -999,45 +1078,59 @@
             setTimeout(() => alert.classList.remove('show'), 3000);
         }
 
-        // Tab switching
-        document.querySelectorAll('.nav-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const tabName = button.getAttribute('data-tab');
-                switchTab(tabName);
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            
+            // Tab switching
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    showTab(tabName);
+                });
             });
+
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('invoiceDate').value = today;
+            document.getElementById('purchaseDate').value = today;
+            document.getElementById('saleDate').value = today;
         });
 
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active class from all buttons
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(button => button.classList.remove('active'));
+
+            // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            // Update views when switching to specific tabs
-            if (tabName === 'purchase') {
-                displayPurchaseProductsList();
-            } else if (tabName === 'sell') {
-                displaySalesFromInvoices();
+
+            // Add active class to clicked button
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Update views when switching to reports
+            if (tabName === 'reports') {
+                updateReports();
             }
         }
 
-        // Add Product
+        // Product functions
         function addProduct() {
-            const name = document.getElementById('productName').value.trim();
-            const sku = document.getElementById('productSku').value.trim();
-            const category = document.getElementById('productCategory').value.trim();
+            const name = document.getElementById('productName').value;
+            const sku = document.getElementById('productSku').value;
+            const category = document.getElementById('productCategory').value;
             const costPrice = parseFloat(document.getElementById('productCostPrice').value);
             const sellingPrice = parseFloat(document.getElementById('productSellingPrice').value);
             const stock = parseInt(document.getElementById('productStock').value);
             const reorderLevel = parseInt(document.getElementById('productReorderLevel').value);
-            const description = document.getElementById('productDescription').value.trim();
+            const description = document.getElementById('productDescription').value;
 
-            if (!name || !sku || !category || isNaN(costPrice) || isNaN(sellingPrice) || isNaN(stock)) {
+            if (!name || !sku || !category || !costPrice || !sellingPrice || !stock) {
                 showAlert('Please fill in all required fields', 'error');
                 return;
             }
@@ -1050,14 +1143,14 @@
                 costPrice,
                 sellingPrice,
                 stock,
-                reorderLevel,
+                reorderLevel: reorderLevel || 10,
                 description,
-                createdAt: new Date().toLocaleString()
+                createdDate: new Date().toISOString()
             };
 
             data.products.push(product);
             saveData();
-            showAlert('Product added successfully');
+            showAlert('Product added successfully!', 'success');
             
             // Clear form
             document.getElementById('productName').value = '';
@@ -1069,441 +1162,36 @@
             document.getElementById('productReorderLevel').value = '10';
             document.getElementById('productDescription').value = '';
 
-            updateAllViews();
-        }
-
-        // Display Purchase Products List
-        function displayPurchaseProductsList() {
-            const container = document.getElementById('purchaseProductsListContainer');
-            
-            if (data.products.length === 0) {
-                container.innerHTML = '<div class="empty-message">No products available. Add products from the Products tab first.</div>';
-                return;
-            }
-
-            let html = '<table>';
-            html += '<thead><tr><th>Product Name</th><th>SKU</th><th>Category</th><th>Cost Price (₹)</th><th>Current Stock</th><th>Description</th></tr></thead>';
-            html += '<tbody>';
-
-            data.products.forEach(product => {
-                html += `<tr>
-                    <td>${product.name}</td>
-                    <td>${product.sku}</td>
-                    <td>${product.category}</td>
-                    <td>₹${product.costPrice.toFixed(2)}</td>
-                    <td>${product.stock} units</td>
-                    <td>${product.description || '-'}</td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        // Display Sales from Invoices
-        function displaySalesFromInvoices() {
-            const container = document.getElementById('salesTableContainer');
-            
-            if (data.invoices.length === 0) {
-                container.innerHTML = '<div class="empty-message">No sales transactions yet. Create invoices to record sales.</div>';
-                return;
-            }
-
-            let html = '<table>';
-            html += '<thead><tr><th>Invoice ID</th><th>Customer Name</th><th>Invoice Date</th><th>Total Items</th><th>Subtotal (₹)</th><th>GST (₹)</th><th>Total Amount (₹)</th><th>Discount</th></tr></thead>';
-            html += '<tbody>';
-
-            data.invoices.forEach(invoice => {
-                const items = data.invoiceItems.filter(item => item.invoiceId === invoice.id);
-                const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-                const gst = (subtotal * invoice.gstRate) / 100;
-                const discount = (subtotal * invoice.discountRate) / 100;
-                const total = subtotal + gst - discount;
-
-                html += `<tr>
-                    <td>#${invoice.id}</td>
-                    <td>${invoice.customerName}</td>
-                    <td>${invoice.invoiceDate}</td>
-                    <td>${items.length}</td>
-                    <td>₹${subtotal.toFixed(2)}</td>
-                    <td>₹${gst.toFixed(2)}</td>
-                    <td>₹${total.toFixed(2)}</td>
-                    <td>${invoice.discountRate}%</td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        // Add Invoice Item
-        function addInvoiceItem() {
-            const productId = document.getElementById('invoiceProduct').value;
-            const quantity = parseInt(document.getElementById('invoiceQuantity').value);
-            const price = parseFloat(document.getElementById('invoicePrice').value);
-
-            if (!productId || isNaN(quantity) || isNaN(price) || quantity <= 0) {
-                showAlert('Please fill in all item fields correctly', 'error');
-                return;
-            }
-
-            const product = data.products.find(p => p.id == productId);
-            if (!product) {
-                showAlert('Product not found', 'error');
-                return;
-            }
-
-            const item = {
-                id: Date.now(),
-                invoiceId: null,
-                productId: parseInt(productId),
-                productName: product.name,
-                quantity,
-                price
-            };
-
-            data.invoiceItems.push(item);
-            saveData();
-            showAlert('Item added to invoice');
-            
-            // Clear fields
-            document.getElementById('invoiceProduct').value = '';
-            document.getElementById('invoiceQuantity').value = '1';
-            document.getElementById('invoicePrice').value = '';
-
-            updateAllViews();
-        }
-
-        // Complete Sale
-        function completeSale() {
-            const saleDate = document.getElementById('saleDate').value;
-            const customerName = document.getElementById('saleCustomerName').value.trim();
-            const gstRate = parseFloat(document.getElementById('saleGstRate').value);
-            const discount = parseFloat(document.getElementById('saleDiscount').value);
-
-            if (!saleDate || !customerName || isNaN(gstRate)) {
-                showAlert('Please fill in all required fields', 'error');
-                return;
-            }
-
-            const saleItems = data.saleItems;
-            if (saleItems.length === 0) {
-                showAlert('Please add items to the sale', 'error');
-                return;
-            }
-
-            const sale = {
-                id: Date.now(),
-                saleDate,
-                customerName,
-                gstRate,
-                discount,
-                items: [...saleItems],
-                createdAt: new Date().toLocaleString()
-            };
-
-            data.sales.push(sale);
-            data.saleItems = [];
-            saveData();
-            showAlert('Sale completed successfully');
-            
-            // Clear form
-            document.getElementById('saleDate').value = '';
-            document.getElementById('saleCustomerName').value = '';
-            document.getElementById('saleGstRate').value = '18';
-            document.getElementById('saleDiscount').value = '0';
-
-            updateAllViews();
-        }
-
-        // Add Sale Item
-        function addSaleItem() {
-            const productId = document.getElementById('saleProduct').value;
-            const quantity = parseInt(document.getElementById('saleQuantity').value);
-            const price = parseFloat(document.getElementById('salePrice').value);
-
-            if (!productId || isNaN(quantity) || isNaN(price) || quantity <= 0) {
-                showAlert('Please fill in all item fields correctly', 'error');
-                return;
-            }
-
-            const product = data.products.find(p => p.id == productId);
-            if (!product) {
-                showAlert('Product not found', 'error');
-                return;
-            }
-
-            const item = {
-                id: Date.now(),
-                productId: parseInt(productId),
-                productName: product.name,
-                quantity,
-                price
-            };
-
-            data.saleItems.push(item);
-            saveData();
-            showAlert('Item added to sale');
-            
-            // Clear fields
-            document.getElementById('saleProduct').value = '';
-            document.getElementById('saleQuantity').value = '1';
-            document.getElementById('salePrice').value = '';
-
-            updateAllViews();
-        }
-
-        // Update Sale Product Price
-        function updateSaleProductPrice() {
-            const productId = document.getElementById('saleProduct').value;
-            if (!productId) {
-                document.getElementById('salePrice').value = '';
-                return;
-            }
-
-            const product = data.products.find(p => p.id == productId);
-            if (product) {
-                document.getElementById('salePrice').value = product.sellingPrice.toFixed(2);
-            }
-        }
-
-        // Generate Invoice
-        function generateInvoice() {
-            const customerId = document.getElementById('invoiceCustomer').value;
-            const invoiceDate = document.getElementById('invoiceDate').value;
-            const gstRate = parseFloat(document.getElementById('gstRate').value);
-            const discountRate = parseFloat(document.getElementById('discountRate').value);
-
-            if (!customerId || !invoiceDate) {
-                showAlert('Please select a customer and invoice date', 'error');
-                return;
-            }
-
-            if (data.invoiceItems.length === 0) {
-                showAlert('Please add items to the invoice', 'error');
-                return;
-            }
-
-            const customer = data.customers.find(c => c.id == customerId);
-            const invoice = {
-                id: Date.now(),
-                customerId: parseInt(customerId),
-                customerName: customer.name,
-                invoiceDate,
-                gstRate,
-                discountRate,
-                items: [...data.invoiceItems],
-                createdAt: new Date().toLocaleString()
-            };
-
-            data.invoiceItems.forEach(item => item.invoiceId = invoice.id);
-            data.invoices.push(invoice);
-            data.invoiceItems = [];
-            saveData();
-            showAlert('Invoice generated successfully');
-
-            // Clear form
-            document.getElementById('invoiceCustomer').value = '';
-            document.getElementById('invoiceDate').value = '';
-            document.getElementById('gstRate').value = '18';
-            document.getElementById('discountRate').value = '0';
-
-            updateAllViews();
-        }
-
-        // Add Customer
-        function addCustomer() {
-            const name = document.getElementById('customerName').value.trim();
-            const email = document.getElementById('customerEmail').value.trim();
-            const phone = document.getElementById('customerPhone').value.trim();
-            const gst = document.getElementById('customerGst').value.trim();
-            const address = document.getElementById('customerAddress').value.trim();
-            const city = document.getElementById('customerCity').value.trim();
-
-            if (!name || !email || !phone || !address || !city) {
-                showAlert('Please fill in all required fields', 'error');
-                return;
-            }
-
-            const customer = {
-                id: Date.now(),
-                name,
-                email,
-                phone,
-                gst,
-                address,
-                city,
-                createdAt: new Date().toLocaleString()
-            };
-
-            data.customers.push(customer);
-            saveData();
-            showAlert('Customer added successfully');
-            
-            // Clear form
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerEmail').value = '';
-            document.getElementById('customerPhone').value = '';
-            document.getElementById('customerGst').value = '';
-            document.getElementById('customerAddress').value = '';
-            document.getElementById('customerCity').value = '';
-
-            updateAllViews();
-        }
-
-        // Load Customer Details
-        function loadCustomerDetails() {
-            const customerId = document.getElementById('invoiceCustomer').value;
-            if (!customerId) return;
-
-            const customer = data.customers.find(c => c.id == customerId);
-            if (customer) {
-                // You can display customer details here if needed
-                console.log('Customer loaded:', customer);
-            }
-        }
-
-        // Update Product Price
-        function updateProductPrice() {
-            const productId = document.getElementById('invoiceProduct').value;
-            if (!productId) {
-                document.getElementById('invoicePrice').value = '';
-                return;
-            }
-
-            const product = data.products.find(p => p.id == productId);
-            if (product) {
-                document.getElementById('invoicePrice').value = product.sellingPrice.toFixed(2);
-            }
-        }
-
-        // Add Purchase Item
-        function addPurchaseItem() {
-            const productId = document.getElementById('purchaseProduct').value;
-            const quantity = parseInt(document.getElementById('purchaseQuantity').value);
-            const price = parseFloat(document.getElementById('purchasePrice').value);
-
-            if (!productId || isNaN(quantity) || isNaN(price) || quantity <= 0) {
-                showAlert('Please fill in all item fields correctly', 'error');
-                return;
-            }
-
-            const product = data.products.find(p => p.id == productId);
-            if (!product) {
-                showAlert('Product not found', 'error');
-                return;
-            }
-
-            const item = {
-                id: Date.now(),
-                productId: parseInt(productId),
-                productName: product.name,
-                quantity,
-                price
-            };
-
-            data.purchaseItems.push(item);
-            saveData();
-            showAlert('Item added to purchase');
-            
-            // Clear fields
-            document.getElementById('purchaseProduct').value = '';
-            document.getElementById('purchaseQuantity').value = '1';
-            document.getElementById('purchasePrice').value = '';
-
-            updateAllViews();
-        }
-
-        // Generate Purchase
-        function generatePurchase() {
-            const supplierName = document.getElementById('supplierName').value.trim();
-            const purchaseDate = document.getElementById('purchaseDate').value;
-            const gstRate = parseFloat(document.getElementById('purchaseGstRate').value);
-            const notes = document.getElementById('purchaseNotes').value.trim();
-
-            if (!supplierName || !purchaseDate) {
-                showAlert('Please fill in supplier name and purchase date', 'error');
-                return;
-            }
-
-            if (data.purchaseItems.length === 0) {
-                showAlert('Please add items to the purchase', 'error');
-                return;
-            }
-
-            const purchase = {
-                id: Date.now(),
-                supplierName,
-                purchaseDate,
-                gstRate,
-                notes,
-                items: [...data.purchaseItems],
-                createdAt: new Date().toLocaleString()
-            };
-
-            data.purchases.push(purchase);
-            data.purchaseItems = [];
-            saveData();
-            showAlert('Purchase completed successfully');
-            
-            // Clear form
-            document.getElementById('supplierName').value = '';
-            document.getElementById('purchaseDate').value = '';
-            document.getElementById('purchaseGstRate').value = '18';
-            document.getElementById('purchaseNotes').value = '';
-
-            updateAllViews();
-        }
-
-        // Update all views
-        function updateAllViews() {
-            updateDashboard();
-            updateProductList();
-            updateCustomerList();
-            updateInvoiceList();
+            updateProductsView();
             updateProductSelects();
-            displayPurchaseProductsList();
-            displaySalesFromInvoices();
+            updateAllViews();
         }
 
-        // Update Dashboard
-        function updateDashboard() {
-            document.getElementById('totalProducts').textContent = data.products.length;
-            document.getElementById('totalCustomers').textContent = data.customers.length;
-            document.getElementById('totalPurchases').textContent = data.purchases.length;
-            document.getElementById('totalSales').textContent = data.sales.length;
-            document.getElementById('totalInvoices').textContent = data.invoices.length;
-            
-            const lowStock = data.products.filter(p => p.stock <= p.reorderLevel).length;
-            document.getElementById('lowStockItems').textContent = lowStock;
-        }
-
-        // Update Product List
-        function updateProductList() {
+        function updateProductsView() {
             const container = document.getElementById('productsTableContainer');
             
             if (data.products.length === 0) {
-                container.innerHTML = '<div class="empty-message">No products added yet.</div>';
+                container.innerHTML = '<div class="empty-message">No products added yet</div>';
                 return;
             }
 
             let html = '<table>';
-            html += '<thead><tr><th>Product Name</th><th>SKU</th><th>Category</th><th>Cost Price (₹)</th><th>Selling Price (₹)</th><th>Stock</th><th>Reorder Level</th><th>Actions</th></tr></thead>';
+            html += '<thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost Price</th><th>Selling Price</th><th>Stock</th><th>Reorder Level</th><th>Actions</th></tr></thead>';
             html += '<tbody>';
 
             data.products.forEach(product => {
-                const stockClass = product.stock <= product.reorderLevel ? 'badge-danger' : 'badge-success';
+                const stockStatus = product.stock <= product.reorderLevel ? 'danger' : (product.stock < 20 ? 'warning' : 'success');
                 html += `<tr>
                     <td>${product.name}</td>
                     <td>${product.sku}</td>
                     <td>${product.category}</td>
                     <td>₹${product.costPrice.toFixed(2)}</td>
                     <td>₹${product.sellingPrice.toFixed(2)}</td>
-                    <td><span class="badge ${stockClass}">${product.stock}</span></td>
+                    <td><span class="badge badge-${stockStatus}">${product.stock}</span></td>
                     <td>${product.reorderLevel}</td>
                     <td>
-                        <button class="btn btn-info" onclick="editProduct(${product.id})" style="padding: 5px 10px; font-size: 12px;">Edit</button>
-                        <button class="btn btn-danger" onclick="deleteProduct(${product.id})" style="padding: 5px 10px; font-size: 12px;">Delete</button>
+                        <button class="btn btn-info" onclick="editProduct(${product.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
                     </td>
                 </tr>`;
             });
@@ -1512,108 +1200,11 @@
             container.innerHTML = html;
         }
 
-        // Update Customer List
-        function updateCustomerList() {
-            const container = document.getElementById('customersTableContainer');
-            
-            if (data.customers.length === 0) {
-                container.innerHTML = '<div class="empty-message">No customers added yet.</div>';
-                return;
-            }
-
-            let html = '<table>';
-            html += '<thead><tr><th>Customer Name</th><th>Email</th><th>Phone</th><th>City</th><th>GST Number</th></tr></thead>';
-            html += '<tbody>';
-
-            data.customers.forEach(customer => {
-                html += `<tr>
-                    <td>${customer.name}</td>
-                    <td>${customer.email}</td>
-                    <td>${customer.phone}</td>
-                    <td>${customer.city}</td>
-                    <td>${customer.gst || '-'}</td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        // Update Invoice List
-        function updateInvoiceList() {
-            const container = document.getElementById('invoicesTableContainer');
-            
-            if (data.invoices.length === 0) {
-                container.innerHTML = '<div class="empty-message">No invoices created yet.</div>';
-                return;
-            }
-
-            let html = '<table>';
-            html += '<thead><tr><th>Invoice ID</th><th>Customer Name</th><th>Invoice Date</th><th>Total Items</th><th>Total Amount (₹)</th><th>Actions</th></tr></thead>';
-            html += '<tbody>';
-
-            data.invoices.forEach(invoice => {
-                const items = data.invoiceItems.filter(item => item.invoiceId === invoice.id);
-                const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-                const gst = (subtotal * invoice.gstRate) / 100;
-                const discount = (subtotal * invoice.discountRate) / 100;
-                const total = subtotal + gst - discount;
-
-                html += `<tr>
-                    <td>#${invoice.id}</td>
-                    <td>${invoice.customerName}</td>
-                    <td>${invoice.invoiceDate}</td>
-                    <td>${items.length}</td>
-                    <td>₹${total.toFixed(2)}</td>
-                    <td>
-                        <button class="btn btn-info" onclick="viewInvoice(${invoice.id})" style="padding: 5px 10px; font-size: 12px;">View</button>
-                    </td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        // Update Product Selects
-        function updateProductSelects() {
-            const selects = ['invoiceProduct', 'purchaseProduct', 'saleProduct'];
-            
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (!select) return;
-
-                const currentValue = select.value;
-                select.innerHTML = '<option value="">-- Select Product --</option>';
-                
-                data.products.forEach(product => {
-                    select.innerHTML += `<option value="${product.id}">${product.name} (Stock: ${product.stock})</option>`;
-                });
-                
-                select.value = currentValue;
-            });
-
-            // Update customer select
-            const customerSelect = document.getElementById('invoiceCustomer');
-            if (customerSelect) {
-                const currentValue = customerSelect.value;
-                customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-                
-                data.customers.forEach(customer => {
-                    customerSelect.innerHTML += `<option value="${customer.id}">${customer.name}</option>`;
-                });
-                
-                customerSelect.value = currentValue;
-            }
-        }
-
-        // Edit Product
-        function editProduct(productId) {
-            const product = data.products.find(p => p.id === productId);
+        function editProduct(id) {
+            const product = data.products.find(p => p.id === id);
             if (!product) return;
 
-            currentEditingProduct = productId;
-
+            currentEditingProduct = id;
             document.getElementById('editProductName').value = product.name;
             document.getElementById('editProductSku').value = product.sku;
             document.getElementById('editProductCategory').value = product.category;
@@ -1626,169 +1217,923 @@
             document.getElementById('editProductModal').classList.add('show');
         }
 
-        // Save Product Changes
         function saveProductChanges() {
             const product = data.products.find(p => p.id === currentEditingProduct);
             if (!product) return;
 
-            product.name = document.getElementById('editProductName').value.trim();
-            product.sku = document.getElementById('editProductSku').value.trim();
-            product.category = document.getElementById('editProductCategory').value.trim();
+            product.name = document.getElementById('editProductName').value;
+            product.sku = document.getElementById('editProductSku').value;
+            product.category = document.getElementById('editProductCategory').value;
             product.costPrice = parseFloat(document.getElementById('editProductCostPrice').value);
             product.sellingPrice = parseFloat(document.getElementById('editProductSellingPrice').value);
             product.stock = parseInt(document.getElementById('editProductStock').value);
             product.reorderLevel = parseInt(document.getElementById('editProductReorderLevel').value);
-            product.description = document.getElementById('editProductDescription').value.trim();
+            product.description = document.getElementById('editProductDescription').value;
 
             saveData();
             closeEditProductModal();
-            showAlert('Product updated successfully');
+            showAlert('Product updated successfully!', 'success');
+            updateProductsView();
+            updateProductSelects();
             updateAllViews();
         }
 
-        // Delete Product
-        function deleteProduct(productId) {
-            if (confirm('Are you sure you want to delete this product?')) {
-                data.products = data.products.filter(p => p.id !== productId);
-                saveData();
-                showAlert('Product deleted successfully');
-                updateAllViews();
-            }
-        }
-
-        // Close modals
         function closeEditProductModal() {
             document.getElementById('editProductModal').classList.remove('show');
             currentEditingProduct = null;
         }
 
-        function closeInvoiceModal() {
-            document.getElementById('invoiceModal').classList.remove('show');
+        function deleteProduct(id) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                data.products = data.products.filter(p => p.id !== id);
+                saveData();
+                showAlert('Product deleted successfully!', 'success');
+                updateProductsView();
+                updateProductSelects();
+                updateAllViews();
+            }
+        }
+
+        // Customer functions
+        function addCustomer() {
+            const name = document.getElementById('customerName').value;
+            const email = document.getElementById('customerEmail').value;
+            const phone = document.getElementById('customerPhone').value;
+            const gst = document.getElementById('customerGst').value;
+            const address = document.getElementById('customerAddress').value;
+            const city = document.getElementById('customerCity').value;
+
+            if (!name || !email || !phone) {
+                showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+
+            const customer = {
+                id: Date.now(),
+                name,
+                email,
+                phone,
+                gst,
+                address,
+                city,
+                createdDate: new Date().toISOString()
+            };
+
+            data.customers.push(customer);
+            saveData();
+            showAlert('Customer added successfully!', 'success');
+
+            // Clear form
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('customerGst').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('customerCity').value = '';
+
+            updateCustomersView();
+            updateCustomerSelects();
+            updateAllViews();
+        }
+
+        function updateCustomersView() {
+            const container = document.getElementById('customersTableContainer');
+
+            if (data.customers.length === 0) {
+                container.innerHTML = '<div class="empty-message">No customers added yet</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>GST</th><th>City</th><th>Actions</th></tr></thead>';
+            html += '<tbody>';
+
+            data.customers.forEach(customer => {
+                html += `<tr>
+                    <td>${customer.name}</td>
+                    <td>${customer.email}</td>
+                    <td>${customer.phone}</td>
+                    <td>${customer.gst || '-'}</td>
+                    <td>${customer.city}</td>
+                    <td><button class="btn btn-danger" onclick="deleteCustomer(${customer.id})">Delete</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function deleteCustomer(id) {
+            if (confirm('Are you sure you want to delete this customer?')) {
+                data.customers = data.customers.filter(c => c.id !== id);
+                saveData();
+                showAlert('Customer deleted successfully!', 'success');
+                updateCustomersView();
+                updateCustomerSelects();
+                updateAllViews();
+            }
+        }
+
+        function updateCustomerSelects() {
+            const selects = [document.getElementById('invoiceCustomer')];
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Select Customer --</option>';
+                data.customers.forEach(customer => {
+                    select.innerHTML += `<option value="${customer.id}">${customer.name}</option>`;
+                });
+                select.value = currentValue;
+            });
+        }
+
+        function loadCustomerDetails() {
+            const customerId = document.getElementById('invoiceCustomer').value;
+            const customer = data.customers.find(c => c.id == customerId);
+            if (customer) {
+                console.log('Customer selected:', customer);
+            }
+        }
+
+        function updateProductSelects() {
+            const selects = [
+                document.getElementById('purchaseProduct'),
+                document.getElementById('saleProduct'),
+                document.getElementById('invoiceProduct')
+            ];
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Select Product --</option>';
+                data.products.forEach(product => {
+                    select.innerHTML += `<option value="${product.id}">${product.name}</option>`;
+                });
+                select.value = currentValue;
+            });
+        }
+
+        // Purchase functions
+        function addPurchaseItem() {
+            const productId = document.getElementById('purchaseProduct').value;
+            const quantity = parseInt(document.getElementById('purchaseQuantity').value);
+            const price = parseFloat(document.getElementById('purchasePrice').value);
+
+            if (!productId || !quantity || !price) {
+                showAlert('Please fill in all item fields', 'error');
+                return;
+            }
+
+            const product = data.products.find(p => p.id == productId);
+            if (!product) return;
+
+            const item = {
+                id: Date.now(),
+                productId: parseInt(productId),
+                productName: product.name,
+                quantity,
+                price,
+                total: quantity * price
+            };
+
+            data.purchaseItems.push(item);
+            saveData();
+            updatePurchaseItemsView();
+
+            // Clear form
+            document.getElementById('purchaseProduct').value = '';
+            document.getElementById('purchaseQuantity').value = '1';
+            document.getElementById('purchasePrice').value = '';
+        }
+
+        function updatePurchaseItemsView() {
+            const container = document.getElementById('purchaseItemsContainer');
+
+            if (data.purchaseItems.length === 0) {
+                container.innerHTML = '<div class="empty-message">No items added</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Unit Price</th><th>Total</th><th>Action</th></tr></thead>';
+            html += '<tbody>';
+
+            data.purchaseItems.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                    <td><button class="btn btn-danger" onclick="removePurchaseItem(${item.id})">Remove</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function removePurchaseItem(id) {
+            data.purchaseItems = data.purchaseItems.filter(item => item.id !== id);
+            saveData();
+            updatePurchaseItemsView();
+        }
+
+        function generatePurchase() {
+            const supplierName = document.getElementById('supplierName').value;
+            const purchaseDate = document.getElementById('purchaseDate').value;
+            const gstRate = parseFloat(document.getElementById('purchaseGstRate').value);
+            const notes = document.getElementById('purchaseNotes').value;
+
+            if (!supplierName || !purchaseDate || data.purchaseItems.length === 0) {
+                showAlert('Please fill in all required fields and add items', 'error');
+                return;
+            }
+
+            const subtotal = data.purchaseItems.reduce((sum, item) => sum + item.total, 0);
+            const gstAmount = subtotal * (gstRate / 100);
+            const total = subtotal + gstAmount;
+
+            const purchase = {
+                id: Date.now(),
+                supplierName,
+                purchaseDate,
+                items: [...data.purchaseItems],
+                gstRate,
+                subtotal,
+                gstAmount,
+                total,
+                notes,
+                createdDate: new Date().toISOString()
+            };
+
+            data.purchases.push(purchase);
+
+            // Update product stock
+            data.purchaseItems.forEach(item => {
+                const product = data.products.find(p => p.id === item.productId);
+                if (product) {
+                    product.stock += item.quantity;
+                }
+            });
+
+            saveData();
+
+            // Generate purchase receipt preview
+            showPurchasePreview(purchase);
+
+            // Clear purchase items
+            data.purchaseItems = [];
+            updatePurchaseItemsView();
+        }
+
+        function showPurchasePreview(purchase) {
+            let html = '<div class="invoice-preview">';
+            html += '<div class="invoice-header"><div class="invoice-title">Purchase Receipt</div></div>';
+            html += '<div class="invoice-details">';
+            html += `<div><strong>Supplier:</strong> ${purchase.supplierName}</div>`;
+            html += `<div><strong>Date:</strong> ${new Date(purchase.purchaseDate).toLocaleDateString()}</div>`;
+            html += '</div>';
+
+            html += '<div class="invoice-table"><table>';
+            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            purchase.items.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+
+            html += '<div class="invoice-summary">';
+            html += `<div class="summary-row"><span class="summary-label">Subtotal:</span><span class="summary-value">₹${purchase.subtotal.toFixed(2)}</span></div>`;
+            html += `<div class="summary-row"><span class="summary-label gst-amount">GST (${purchase.gstRate}%):</span><span class="summary-value gst-amount">₹${purchase.gstAmount.toFixed(2)}</span></div>`;
+            html += `<div class="summary-row"><span class="summary-label">Total:</span><span class="summary-value total-amount">₹${purchase.total.toFixed(2)}</span></div>`;
+            html += '</div>';
+
+            if (purchase.notes) {
+                html += `<div style="margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px;"><strong>Notes:</strong> ${purchase.notes}</div>`;
+            }
+
+            html += '</div>';
+
+            document.getElementById('purchasePreview').innerHTML = html;
+            currentPurchase = purchase;
+            document.getElementById('purchaseModal').classList.add('show');
         }
 
         function closePurchaseModal() {
             document.getElementById('purchaseModal').classList.remove('show');
         }
 
-        function closeSaleModal() {
-            document.getElementById('saleModal').classList.remove('show');
-        }
-
-        // View Invoice
-        function viewInvoice(invoiceId) {
-            const invoice = data.invoices.find(i => i.id === invoiceId);
-            if (!invoice) return;
-
-            const items = data.invoiceItems.filter(item => item.invoiceId === invoiceId);
-            const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-            const gst = (subtotal * invoice.gstRate) / 100;
-            const discount = (subtotal * invoice.discountRate) / 100;
-            const total = subtotal + gst - discount;
-
-            let html = '<div class="invoice-preview">';
-            html += '<div class="invoice-header">';
-            html += '<div class="invoice-title">INVOICE</div>';
-            html += `<p>Invoice #${invoice.id}</p>`;
-            html += '</div>';
-
-            html += '<div class="invoice-details">';
-            html += `<div><strong>Customer:</strong> ${invoice.customerName}</div>`;
-            html += `<div><strong>Date:</strong> ${invoice.invoiceDate}</div>`;
-            html += '</div>';
-
-            html += '<div class="invoice-table">';
-            html += '<table>';
-            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Amount</th></tr></thead>';
-            html += '<tbody>';
-
-            items.forEach(item => {
-                const amount = item.quantity * item.price;
-                html += `<tr>
-                    <td>${item.productName}</td>
-                    <td>${item.quantity}</td>
-                    <td>₹${item.price.toFixed(2)}</td>
-                    <td>₹${amount.toFixed(2)}</td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            html += '</div>';
-
-            html += '<div class="invoice-summary">';
-            html += `<div class="summary-row">
-                <span class="summary-label">Subtotal:</span>
-                <span class="summary-value">₹${subtotal.toFixed(2)}</span>
-            </div>`;
-            html += `<div class="summary-row">
-                <span class="summary-label">Discount (${invoice.discountRate}%):</span>
-                <span class="summary-value">-₹${discount.toFixed(2)}</span>
-            </div>`;
-            html += `<div class="summary-row">
-                <span class="summary-label gst-amount">GST (${invoice.gstRate}%):</span>
-                <span class="summary-value gst-amount">₹${gst.toFixed(2)}</span>
-            </div>`;
-            html += `<div class="summary-row">
-                <span class="summary-label total-amount">Total Amount:</span>
-                <span class="summary-value total-amount">₹${total.toFixed(2)}</span>
-            </div>`;
-            html += '</div>';
-            html += '</div>';
-
-            document.getElementById('invoicePreview').innerHTML = html;
-            document.getElementById('invoiceModal').classList.add('show');
-        }
-
-        // Print Invoice
-        function printInvoice() {
-            window.print();
-        }
-
-        // Download PDF
-        function downloadInvoicePDF() {
-            showAlert('PDF download functionality would be implemented with a library like jsPDF');
-        }
-
-        // Save Invoice
-        function saveInvoice() {
-            showAlert('Invoice saved successfully');
-            closeInvoiceModal();
-        }
-
-        // Print Purchase
         function printPurchase() {
             window.print();
         }
 
-        // Save Purchase
         function savePurchase() {
-            showAlert('Purchase saved successfully');
+            showAlert('Purchase receipt saved successfully!', 'success');
             closePurchaseModal();
+            updateAllViews();
         }
 
-        // Print Sale
+        // Sales functions
+        function updateSaleProductPrice() {
+            const productId = document.getElementById('saleProduct').value;
+            const product = data.products.find(p => p.id == productId);
+            if (product) {
+                document.getElementById('salePrice').value = product.sellingPrice.toFixed(2);
+            }
+        }
+
+        function addSaleItem() {
+            const productId = document.getElementById('saleProduct').value;
+            const quantity = parseInt(document.getElementById('saleQuantity').value);
+            const price = parseFloat(document.getElementById('salePrice').value);
+
+            if (!productId || !quantity || !price) {
+                showAlert('Please fill in all item fields', 'error');
+                return;
+            }
+
+            const product = data.products.find(p => p.id == productId);
+            if (!product) return;
+
+            if (product.stock < quantity) {
+                showAlert('Insufficient stock available', 'error');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                productId: parseInt(productId),
+                productName: product.name,
+                quantity,
+                price,
+                total: quantity * price
+            };
+
+            data.saleItems.push(item);
+            saveData();
+            updateSaleItemsView();
+
+            // Clear form
+            document.getElementById('saleProduct').value = '';
+            document.getElementById('saleQuantity').value = '1';
+            document.getElementById('salePrice').value = '';
+        }
+
+        function updateSaleItemsView() {
+            const container = document.getElementById('saleItemsContainer');
+
+            if (data.saleItems.length === 0) {
+                container.innerHTML = '<div class="empty-message">No items added</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Unit Price</th><th>Total</th><th>Action</th></tr></thead>';
+            html += '<tbody>';
+
+            data.saleItems.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                    <td><button class="btn btn-danger" onclick="removeSaleItem(${item.id})">Remove</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function removeSaleItem(id) {
+            data.saleItems = data.saleItems.filter(item => item.id !== id);
+            saveData();
+            updateSaleItemsView();
+        }
+
+        function completeSale() {
+            const saleDate = document.getElementById('saleDate').value;
+            const customerName = document.getElementById('saleCustomerName').value;
+            const gstRate = parseFloat(document.getElementById('saleGstRate').value);
+            const discount = parseFloat(document.getElementById('saleDiscount').value);
+
+            if (!saleDate || !customerName || data.saleItems.length === 0) {
+                showAlert('Please fill in all required fields and add items', 'error');
+                return;
+            }
+
+            const subtotal = data.saleItems.reduce((sum, item) => sum + item.total, 0);
+            const discountAmount = subtotal * (discount / 100);
+            const afterDiscount = subtotal - discountAmount;
+            const gstAmount = afterDiscount * (gstRate / 100);
+            const total = afterDiscount + gstAmount;
+
+            const sale = {
+                id: Date.now(),
+                customerName,
+                saleDate,
+                items: [...data.saleItems],
+                gstRate,
+                discount,
+                subtotal,
+                discountAmount,
+                afterDiscount,
+                gstAmount,
+                total,
+                createdDate: new Date().toISOString()
+            };
+
+            data.sales.push(sale);
+
+            // Update product stock
+            data.saleItems.forEach(item => {
+                const product = data.products.find(p => p.id === item.productId);
+                if (product) {
+                    product.stock -= item.quantity;
+                }
+            });
+
+            saveData();
+
+            // Generate sale receipt preview
+            showSalePreview(sale);
+
+            // Clear sale items
+            data.saleItems = [];
+            updateSaleItemsView();
+        }
+
+        function showSalePreview(sale) {
+            let html = '<div class="invoice-preview">';
+            html += '<div class="invoice-header"><div class="invoice-title">Sales Receipt</div></div>';
+            html += '<div class="invoice-details">';
+            html += `<div><strong>Customer:</strong> ${sale.customerName}</div>`;
+            html += `<div><strong>Date:</strong> ${new Date(sale.saleDate).toLocaleDateString()}</div>`;
+            html += '</div>';
+
+            html += '<div class="invoice-table"><table>';
+            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            sale.items.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+
+            html += '<div class="invoice-summary">';
+            html += `<div class="summary-row"><span class="summary-label">Subtotal:</span><span class="summary-value">₹${sale.subtotal.toFixed(2)}</span></div>`;
+            if (sale.discount > 0) {
+                html += `<div class="summary-row"><span class="summary-label">Discount (${sale.discount}%):</span><span class="summary-value">-₹${sale.discountAmount.toFixed(2)}</span></div>`;
+            }
+            html += `<div class="summary-row"><span class="summary-label gst-amount">GST (${sale.gstRate}%):</span><span class="summary-value gst-amount">₹${sale.gstAmount.toFixed(2)}</span></div>`;
+            html += `<div class="summary-row"><span class="summary-label">Total:</span><span class="summary-value total-amount">₹${sale.total.toFixed(2)}</span></div>`;
+            html += '</div>';
+
+            html += '</div>';
+
+            document.getElementById('salePreview').innerHTML = html;
+            currentSale = sale;
+            document.getElementById('saleModal').classList.add('show');
+        }
+
+        function closeSaleModal() {
+            document.getElementById('saleModal').classList.remove('show');
+        }
+
         function printSale() {
             window.print();
         }
 
-        // Save Sale
         function saveSale() {
-            showAlert('Sale saved successfully');
+            showAlert('Sales receipt saved successfully!', 'success');
             closeSaleModal();
+            updateAllViews();
         }
 
-        // Set today's date for date inputs
-        const today = new Date().toISOString().split('T')[0];
-        const dateInputs = document.querySelectorAll('input[type="date"]');
-        dateInputs.forEach(input => {
-            if (!input.value) {
-                input.value = today;
+        // Invoice functions
+        function updateProductPrice() {
+            const productId = document.getElementById('invoiceProduct').value;
+            const quantity = parseInt(document.getElementById('invoiceQuantity').value);
+            const product = data.products.find(p => p.id == productId);
+            if (product) {
+                document.getElementById('invoicePrice').value = (product.sellingPrice * quantity).toFixed(2);
             }
-        });
+        }
 
-        // Initialize on page load
-        window.addEventListener('load', () => {
-            loadData();
-        });
+        function addInvoiceItem() {
+            const productId = document.getElementById('invoiceProduct').value;
+            const quantity = parseInt(document.getElementById('invoiceQuantity').value);
+            const product = data.products.find(p => p.id == productId);
+
+            if (!productId || !quantity || !product) {
+                showAlert('Please select a valid product and quantity', 'error');
+                return;
+            }
+
+            if (product.stock < quantity) {
+                showAlert('Insufficient stock available', 'error');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                productId: parseInt(productId),
+                productName: product.name,
+                quantity,
+                price: product.sellingPrice,
+                total: product.sellingPrice * quantity
+            };
+
+            data.invoiceItems.push(item);
+            saveData();
+            updateInvoiceItemsView();
+
+            // Clear form
+            document.getElementById('invoiceProduct').value = '';
+            document.getElementById('invoiceQuantity').value = '1';
+            document.getElementById('invoicePrice').value = '';
+        }
+
+        function updateInvoiceItemsView() {
+            const container = document.getElementById('invoiceItemsContainer');
+
+            if (data.invoiceItems.length === 0) {
+                container.innerHTML = '<div class="empty-message">No items added</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Unit Price</th><th>Total</th><th>Action</th></tr></thead>';
+            html += '<tbody>';
+
+            data.invoiceItems.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                    <td><button class="btn btn-danger" onclick="removeInvoiceItem(${item.id})">Remove</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function removeInvoiceItem(id) {
+            data.invoiceItems = data.invoiceItems.filter(item => item.id !== id);
+            saveData();
+            updateInvoiceItemsView();
+        }
+
+        function generateInvoice() {
+            const customerId = document.getElementById('invoiceCustomer').value;
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const gstRate = parseFloat(document.getElementById('gstRate').value);
+            const discountRate = parseFloat(document.getElementById('discountRate').value);
+
+            if (!customerId || !invoiceDate || data.invoiceItems.length === 0) {
+                showAlert('Please select customer, date and add items', 'error');
+                return;
+            }
+
+            const customer = data.customers.find(c => c.id == customerId);
+            if (!customer) return;
+
+            const subtotal = data.invoiceItems.reduce((sum, item) => sum + item.total, 0);
+            const discountAmount = subtotal * (discountRate / 100);
+            const afterDiscount = subtotal - discountAmount;
+            const gstAmount = afterDiscount * (gstRate / 100);
+            const total = afterDiscount + gstAmount;
+
+            const invoice = {
+                id: Date.now(),
+                invoiceNumber: `INV-${Date.now()}`,
+                customerId: parseInt(customerId),
+                customerName: customer.name,
+                invoiceDate,
+                items: [...data.invoiceItems],
+                gstRate,
+                discountRate,
+                subtotal,
+                discountAmount,
+                afterDiscount,
+                gstAmount,
+                total,
+                createdDate: new Date().toISOString()
+            };
+
+            data.invoices.push(invoice);
+
+            // Update product stock
+            data.invoiceItems.forEach(item => {
+                const product = data.products.find(p => p.id === item.productId);
+                if (product) {
+                    product.stock -= item.quantity;
+                }
+            });
+
+            saveData();
+
+            // Generate invoice preview
+            showInvoicePreview(invoice);
+
+            // Clear invoice items
+            data.invoiceItems = [];
+            updateInvoiceItemsView();
+        }
+
+        function showInvoicePreview(invoice) {
+            let html = '<div class="invoice-preview">';
+            html += '<div class="invoice-header"><div class="invoice-title">Tax Invoice</div></div>';
+            html += '<div class="invoice-details">';
+            html += `<div><strong>Invoice Number:</strong> ${invoice.invoiceNumber}</div>`;
+            html += `<div><strong>Invoice Date:</strong> ${new Date(invoice.invoiceDate).toLocaleDateString()}</div>`;
+            html += `<div><strong>Customer Name:</strong> ${invoice.customerName}</div>`;
+            html += '</div>';
+
+            html += '<div class="invoice-table"><table>';
+            html += '<thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            invoice.items.forEach(item => {
+                html += `<tr>
+                    <td>${item.productName}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>₹${item.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+
+            html += '<div class="invoice-summary">';
+            html += `<div class="summary-row"><span class="summary-label">Subtotal:</span><span class="summary-value">₹${invoice.subtotal.toFixed(2)}</span></div>`;
+            if (invoice.discountRate > 0) {
+                html += `<div class="summary-row"><span class="summary-label">Discount (${invoice.discountRate}%):</span><span class="summary-value">-₹${invoice.discountAmount.toFixed(2)}</span></div>`;
+            }
+            html += `<div class="summary-row"><span class="summary-label gst-amount">GST (${invoice.gstRate}%):</span><span class="summary-value gst-amount">₹${invoice.gstAmount.toFixed(2)}</span></div>`;
+            html += `<div class="summary-row"><span class="summary-label">Total:</span><span class="summary-value total-amount">₹${invoice.total.toFixed(2)}</span></div>`;
+            html += '</div>';
+
+            html += '</div>';
+
+            document.getElementById('invoicePreview').innerHTML = html;
+            currentInvoice = invoice;
+            document.getElementById('invoiceModal').classList.add('show');
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').classList.remove('show');
+        }
+
+        function printInvoice() {
+            window.print();
+        }
+
+        function downloadInvoicePDF() {
+            showAlert('PDF download feature coming soon!', 'info');
+        }
+
+        function saveInvoice() {
+            showAlert('Invoice saved successfully!', 'success');
+            closeInvoiceModal();
+            updateAllViews();
+        }
+
+        // Report functions
+        function updateReports() {
+            updateInventorySummary();
+            updatePurchaseReport();
+            updateSalesReport();
+            updateLowStockReport();
+        }
+
+        function updateInventorySummary() {
+            const container = document.getElementById('inventorySummaryContainer');
+
+            if (data.products.length === 0) {
+                container.innerHTML = '<div class="empty-message">No products in inventory</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Value (at cost)</th><th>Value (at selling)</th></tr></thead>';
+            html += '<tbody>';
+
+            data.products.forEach(product => {
+                const costValue = product.stock * product.costPrice;
+                const sellingValue = product.stock * product.sellingPrice;
+                html += `<tr>
+                    <td>${product.name}</td>
+                    <td>${product.sku}</td>
+                    <td>${product.stock}</td>
+                    <td>₹${costValue.toFixed(2)}</td>
+                    <td>₹${sellingValue.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updatePurchaseReport() {
+            const container = document.getElementById('purchaseReportContainer');
+
+            if (data.purchases.length === 0) {
+                container.innerHTML = '<div class="empty-message">No purchases recorded</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Date</th><th>Supplier</th><th>Items</th><th>Subtotal</th><th>GST</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            data.purchases.forEach(purchase => {
+                html += `<tr>
+                    <td>${new Date(purchase.purchaseDate).toLocaleDateString()}</td>
+                    <td>${purchase.supplierName}</td>
+                    <td>${purchase.items.length}</td>
+                    <td>₹${purchase.subtotal.toFixed(2)}</td>
+                    <td>₹${purchase.gstAmount.toFixed(2)}</td>
+                    <td>₹${purchase.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateSalesReport() {
+            const container = document.getElementById('salesReportContainer');
+
+            // Combine sales and invoices for complete sales report
+            const allSales = [...data.sales, ...data.invoices].sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+
+            if (allSales.length === 0) {
+                container.innerHTML = '<div class="empty-message">No sales recorded</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Discount</th><th>GST</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            allSales.forEach(sale => {
+                const discountAmount = sale.discountAmount || 0;
+                html += `<tr>
+                    <td>${new Date(sale.saleDate || sale.invoiceDate).toLocaleDateString()}</td>
+                    <td>${sale.customerName}</td>
+                    <td>${sale.items.length}</td>
+                    <td>₹${sale.subtotal.toFixed(2)}</td>
+                    <td>₹${discountAmount.toFixed(2)}</td>
+                    <td>₹${sale.gstAmount.toFixed(2)}</td>
+                    <td>₹${sale.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateLowStockReport() {
+            const container = document.getElementById('lowStockContainer');
+            const lowStockProducts = data.products.filter(p => p.stock <= p.reorderLevel);
+
+            if (lowStockProducts.length === 0) {
+                container.innerHTML = '<div class="empty-message">All products have sufficient stock</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Reorder Level</th><th>Status</th></tr></thead>';
+            html += '<tbody>';
+
+            lowStockProducts.forEach(product => {
+                const status = product.stock === 0 ? 'Out of Stock' : 'Low Stock';
+                const badge = product.stock === 0 ? 'danger' : 'warning';
+                html += `<tr>
+                    <td>${product.name}</td>
+                    <td>${product.sku}</td>
+                    <td>${product.stock}</td>
+                    <td>${product.reorderLevel}</td>
+                    <td><span class="badge badge-${badge}">${status}</span></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Update all views
+        function updateAllViews() {
+            updateProductsView();
+            updateCustomersView();
+            updateProductSelects();
+            updateCustomerSelects();
+            updatePurchaseProductsListView();
+            updateSalesTableView();
+            updateInvoicesTableView();
+            updateDashboard();
+        }
+
+        function updatePurchaseProductsListView() {
+            const container = document.getElementById('purchaseProductsListContainer');
+
+            if (data.products.length === 0) {
+                container.innerHTML = '<div class="empty-message">No products available</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Cost Price</th><th>Stock</th></tr></thead>';
+            html += '<tbody>';
+
+            data.products.forEach(product => {
+                html += `<tr>
+                    <td>${product.name}</td>
+                    <td>${product.sku}</td>
+                    <td>${product.category}</td>
+                    <td>₹${product.costPrice.toFixed(2)}</td>
+                    <td>${product.stock}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateSalesTableView() {
+            const container = document.getElementById('salesTableContainer');
+
+            if (data.sales.length === 0) {
+                container.innerHTML = '<div class="empty-message">No sales recorded</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            data.sales.forEach(sale => {
+                html += `<tr>
+                    <td>${new Date(sale.saleDate).toLocaleDateString()}</td>
+                    <td>${sale.customerName}</td>
+                    <td>${sale.items.length}</td>
+                    <td>₹${sale.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateInvoicesTableView() {
+            const container = document.getElementById('invoicesTableContainer');
+
+            if (data.invoices.length === 0) {
+                container.innerHTML = '<div class="empty-message">No invoices created</div>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<thead><tr><th>Invoice #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th></tr></thead>';
+            html += '<tbody>';
+
+            data.invoices.forEach(invoice => {
+                html += `<tr>
+                    <td>${invoice.invoiceNumber}</td>
+                    <td>${new Date(invoice.invoiceDate).toLocaleDateString()}</td>
+                    <td>${invoice.customerName}</td>
+                    <td>${invoice.items.length}</td>
+                    <td>₹${invoice.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateDashboard() {
+            document.getElementById('totalProducts').textContent = data.products.length;
+            document.getElementById('totalCustomers').textContent = data.customers.length;
+            document.getElementById('totalPurchases').textContent = data.purchases.length;
+            document.getElementById('totalSales').textContent = data.sales.length;
+            document.getElementById('totalInvoices').textContent = data.invoices.length;
+            
+            const lowStockCount = data.products.filter(p => p.stock <= p.reorderLevel).length;
+            document.getElementById('lowStockItems').textContent = lowStockCount;
+        }
     </script>
 </body>
 </html>
