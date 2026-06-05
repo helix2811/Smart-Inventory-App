@@ -1,0 +1,335 @@
+{
+  "products": [
+    {
+      "id": "PROD001",
+      "name": "Laptop",
+      "sku": "SKU-001",
+      "category": "Electronics",
+      "costPrice": 45000,
+      "sellingPrice": 55000,
+      "stock": 15,
+      "reorderLevel": 5,
+      "description": "High-performance laptop for professionals"
+    },
+    {
+      "id": "PROD002",
+      "name": "Wireless Mouse",
+      "sku": "SKU-002",
+      "category": "Accessories",
+      "costPrice": 500,
+      "sellingPrice": 799,
+      "stock": 120,
+      "reorderLevel": 20,
+      "description": "Ergonomic wireless mouse with 2.4GHz connectivity"
+    },
+    {
+      "id": "PROD003",
+      "name": "USB-C Cable",
+      "sku": "SKU-003",
+      "category": "Cables",
+      "costPrice": 150,
+      "sellingPrice": 299,
+      "stock": 200,
+      "reorderLevel": 50,
+      "description": "Premium quality USB-C charging cable"
+    },
+    {
+      "id": "PROD004",
+      "name": "External SSD 1TB",
+      "sku": "SKU-004",
+      "category": "Storage",
+      "costPrice": 8000,
+      "sellingPrice": 10999,
+      "stock": 8,
+      "reorderLevel": 3,
+      "description": "Fast external SSD with 1TB capacity"
+    },
+    {
+      "id": "PROD005",
+      "name": "Mechanical Keyboard",
+      "sku": "SKU-005",
+      "category": "Accessories",
+      "costPrice": 3500,
+      "sellingPrice": 5499,
+      "stock": 25,
+      "reorderLevel": 10,
+      "description": "RGB Mechanical keyboard with Cherry MX switches"
+    },
+    {
+      "id": "PROD006",
+      "name": "Monitor 27 inch",
+      "sku": "SKU-006",
+      "category": "Electronics",
+      "costPrice": 15000,
+      "sellingPrice": 19999,
+      "stock": 12,
+      "reorderLevel": 5,
+      "description": "4K IPS Monitor with 27 inch display"
+    },
+    {
+      "id": "PROD007",
+      "name": "Webcam HD",
+      "sku": "SKU-007",
+      "category": "Accessories",
+      "costPrice": 2000,
+      "sellingPrice": 3499,
+      "stock": 45,
+      "reorderLevel": 15,
+      "description": "Full HD 1080p webcam with built-in microphone"
+    },
+    {
+      "id": "PROD008",
+      "name": "Phone Stand",
+      "sku": "SKU-008",
+      "category": "Accessories",
+      "costPrice": 300,
+      "sellingPrice": 599,
+      "stock": 150,
+      "reorderLevel": 40,
+      "description": "Adjustable phone stand for all devices"
+    }
+  ],
+  "customers": [
+    {
+      "id": "CUST001",
+      "name": "Rajesh Kumar",
+      "email": "rajesh.kumar@email.com",
+      "phone": "+91-9876543210",
+      "gst": "18AABCU1234F1Z5",
+      "address": "123 Tech Park, IT Hub",
+      "city": "Bangalore"
+    },
+    {
+      "id": "CUST002",
+      "name": "Priya Sharma",
+      "email": "priya.sharma@email.com",
+      "phone": "+91-9123456789",
+      "gst": "18AAACR5055K1Z0",
+      "address": "456 Business Complex, Electronic City",
+      "city": "Pune"
+    },
+    {
+      "id": "CUST003",
+      "name": "Amit Patel",
+      "email": "amit.patel@email.com",
+      "phone": "+91-8765432109",
+      "gst": "18AAJPK1234R1Z9",
+      "address": "789 Corporate Tower, Financial District",
+      "city": "Mumbai"
+    },
+    {
+      "id": "CUST004",
+      "name": "Sneha Desai",
+      "email": "sneha.desai@email.com",
+      "phone": "+91-7654321098",
+      "gst": "18AACCT1234F1Z2",
+      "address": "321 Tech Avenue, Startup Hub",
+      "city": "Delhi"
+    },
+    {
+      "id": "CUST005",
+      "name": "Vikram Singh",
+      "email": "vikram.singh@email.com",
+      "phone": "+91-6543210987",
+      "gst": "",
+      "address": "654 Innovation Park, Business Zone",
+      "city": "Hyderabad"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "INV001",
+      "customerId": "CUST001",
+      "customerName": "Rajesh Kumar",
+      "date": "2025-06-01",
+      "items": [
+        {
+          "productId": "PROD001",
+          "productName": "Laptop",
+          "quantity": 2,
+          "price": 55000,
+          "total": 110000
+        },
+        {
+          "productId": "PROD005",
+          "productName": "Mechanical Keyboard",
+          "quantity": 2,
+          "price": 5499,
+          "total": 10998
+        }
+      ],
+      "subtotal": 120998,
+      "gstRate": 18,
+      "gstAmount": 21779.64,
+      "discountRate": 0,
+      "discountAmount": 0,
+      "total": 142777.64,
+      "status": "completed"
+    },
+    {
+      "id": "INV002",
+      "customerId": "CUST002",
+      "customerName": "Priya Sharma",
+      "date": "2025-06-02",
+      "items": [
+        {
+          "productId": "PROD006",
+          "productName": "Monitor 27 inch",
+          "quantity": 1,
+          "price": 19999,
+          "total": 19999
+        },
+        {
+          "productId": "PROD002",
+          "productName": "Wireless Mouse",
+          "quantity": 3,
+          "price": 799,
+          "total": 2397
+        }
+      ],
+      "subtotal": 22396,
+      "gstRate": 18,
+      "gstAmount": 4031.28,
+      "discountRate": 5,
+      "discountAmount": 1119.8,
+      "total": 25307.48,
+      "status": "completed"
+    },
+    {
+      "id": "INV003",
+      "customerId": "CUST003",
+      "customerName": "Amit Patel",
+      "date": "2025-06-03",
+      "items": [
+        {
+          "productId": "PROD004",
+          "productName": "External SSD 1TB",
+          "quantity": 2,
+          "price": 10999,
+          "total": 21998
+        }
+      ],
+      "subtotal": 21998,
+      "gstRate": 18,
+      "gstAmount": 3959.64,
+      "discountRate": 0,
+      "discountAmount": 0,
+      "total": 25957.64,
+      "status": "completed"
+    }
+  ],
+  "purchases": [
+    {
+      "id": "PURCH001",
+      "supplier": "Tech Suppliers Ltd",
+      "date": "2025-05-25",
+      "items": [
+        {
+          "productId": "PROD001",
+          "productName": "Laptop",
+          "quantity": 5,
+          "price": 45000,
+          "total": 225000
+        },
+        {
+          "productId": "PROD005",
+          "productName": "Mechanical Keyboard",
+          "quantity": 20,
+          "price": 3500,
+          "total": 70000
+        }
+      ],
+      "subtotal": 295000,
+      "gstRate": 18,
+      "gstAmount": 53100,
+      "notes": "Bulk order for inventory restocking",
+      "total": 348100,
+      "status": "completed"
+    },
+    {
+      "id": "PURCH002",
+      "supplier": "Electronics Wholesale",
+      "date": "2025-05-28",
+      "items": [
+        {
+          "productId": "PROD002",
+          "productName": "Wireless Mouse",
+          "quantity": 100,
+          "price": 500,
+          "total": 50000
+        },
+        {
+          "productId": "PROD003",
+          "productName": "USB-C Cable",
+          "quantity": 150,
+          "price": 150,
+          "total": 22500
+        }
+      ],
+      "subtotal": 72500,
+      "gstRate": 18,
+      "gstAmount": 13050,
+      "notes": "Stock replenishment for accessories",
+      "total": 85550,
+      "status": "completed"
+    }
+  ],
+  "sales": [
+    {
+      "id": "SALE001",
+      "customerName": "Walk-in Customer 1",
+      "date": "2025-06-01",
+      "items": [
+        {
+          "productId": "PROD002",
+          "productName": "Wireless Mouse",
+          "quantity": 5,
+          "price": 799,
+          "total": 3995
+        },
+        {
+          "productId": "PROD007",
+          "productName": "Webcam HD",
+          "quantity": 2,
+          "price": 3499,
+          "total": 6998
+        }
+      ],
+      "subtotal": 10993,
+      "gstRate": 18,
+      "gstAmount": 1978.74,
+      "discountRate": 0,
+      "discountAmount": 0,
+      "total": 12971.74,
+      "status": "completed"
+    },
+    {
+      "id": "SALE002",
+      "customerName": "Walk-in Customer 2",
+      "date": "2025-06-02",
+      "items": [
+        {
+          "productId": "PROD003",
+          "productName": "USB-C Cable",
+          "quantity": 10,
+          "price": 299,
+          "total": 2990
+        },
+        {
+          "productId": "PROD008",
+          "productName": "Phone Stand",
+          "quantity": 3,
+          "price": 599,
+          "total": 1797
+        }
+      ],
+      "subtotal": 4787,
+      "gstRate": 18,
+      "gstAmount": 861.66,
+      "discountRate": 10,
+      "discountAmount": 478.7,
+      "total": 5170.96,
+      "status": "completed"
+    }
+  ]
+}
